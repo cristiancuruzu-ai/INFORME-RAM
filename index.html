@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Casino - Reportes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --bg3: #1e2333;
+    --border: #2a2f42;
+    --text: #e8eaf0;
+    --text2: #8b90a7;
+    --accent: #4f7ef7;
+    --accent2: #f7a84f;
+    --green: #4fd198;
+    --red: #f75f5f;
+    --purple: #a78bfa;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { font-size: 18px; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .header-sub { font-size: 13px; color: var(--text2); }
+
+  .controls {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 32px;
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .controls label { font-size: 12px; color: var(--text2); display: flex; flex-direction: column; gap: 4px; }
+  .controls select, .controls input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 130px;
+  }
+  .controls select:focus, .controls input:focus { outline: 1px solid var(--accent); }
+  .btn-reset {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-top: 16px;
+    transition: background 0.15s;
+  }
+  .btn-reset:hover { background: var(--border); color: var(--text); }
+
+  .main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .kpi-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .kpi-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .kpi-sub { font-size: 12px; color: var(--text2); }
+  .kpi.accent .kpi-value { color: var(--accent); }
+  .kpi.green .kpi-value { color: var(--green); }
+  .kpi.orange .kpi-value { color: var(--accent2); }
+  .kpi.purple .kpi-value { color: var(--purple); }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .chart-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .chart-card.full { grid-column: 1 / -1; }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .chart-wrap { position: relative; height: 240px; }
+  .chart-wrap.tall { height: 300px; }
+
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .table-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+  .table-count { font-size: 12px; color: var(--text2); background: var(--bg3); padding: 2px 8px; border-radius: 20px; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: var(--text); }
+  td { padding: 9px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge-cc { background: rgba(79,126,247,0.15); color: var(--accent); }
+  .badge-ax { background: rgba(247,168,79,0.15); color: var(--accent2); }
+  .badge-zero { background: rgba(247,95,95,0.15); color: var(--red); }
+  .num { font-variant-numeric: tabular-nums; }
+  .pct-bar { display: flex; align-items: center; gap: 8px; }
+  .pct-bg { flex: 1; height: 4px; background: var(--border); border-radius: 2px; min-width: 60px; }
+  .pct-fill { height: 100%; border-radius: 2px; background: var(--green); }
+  .sort-icon { margin-left: 4px; opacity: 0.4; }
+  .sort-icon.active { opacity: 1; }
+
+  .empty { padding: 40px; text-align: center; color: var(--text2); font-size: 14px; }
+
+  @media (max-width: 768px) {
+    header, .controls, .main { padding-left: 16px; padding-right: 16px; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .chart-card.full { grid-column: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">Casino <span>Analytics</span></div>
+    <div class="header-sub">Corrientes · 2018–2026</div>
+  </div>
+  <div style="font-size:12px;color:var(--text2)">2 sucursales · <span id="total-meses">—</span> registros</div>
+</header>
+
+<div class="controls">
+  <label>Sucursal
+    <select id="fil-sucursal">
+      <option value="">Todas</option>
+      <option value="CURUZU CUATIA">Curuzu Cuatia</option>
+      <option value="ANEXO CCUATIA">Anexo CCuatia</option>
+    </select>
+  </label>
+  <label>Año desde
+    <select id="fil-anio-desde"></select>
+  </label>
+  <label>Año hasta
+    <select id="fil-anio-hasta"></select>
+  </label>
+  <label>Mes desde
+    <select id="fil-mes-desde">
+      <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+      <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+      <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+      <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+    </select>
+  </label>
+  <label>Mes hasta
+    <select id="fil-mes-hasta">
+      <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+      <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+      <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+      <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+    </select>
+  </label>
+  <label>Solo con datos
+    <select id="fil-ceros">
+      <option value="0">Todos</option>
+      <option value="1">Excluir meses cerrados</option>
+    </select>
+  </label>
+  <button class="btn-reset" onclick="resetFiltros()">↺ Resetear</button>
+</div>
+
+<div class="main">
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="kpi-label">RAM Total</div><div class="kpi-value" id="kpi-ram">—</div><div class="kpi-sub" id="kpi-ram-sub">—</div></div>
+    <div class="kpi orange"><div class="kpi-label">Apuestas Totales</div><div class="kpi-value" id="kpi-ap">—</div><div class="kpi-sub" id="kpi-ap-sub">—</div></div>
+    <div class="kpi green"><div class="kpi-label">% Retención Prom.</div><div class="kpi-value" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">—</div></div>
+    <div class="kpi purple"><div class="kpi-label">EGMs Promedio</div><div class="kpi-value" id="kpi-egms">—</div><div class="kpi-sub" id="kpi-egms-sub">—</div></div>
+    <div class="kpi"><div class="kpi-label">Mejor Mes RAM</div><div class="kpi-value" id="kpi-best" style="font-size:16px">—</div><div class="kpi-sub" id="kpi-best-sub">—</div></div>
+    <div class="kpi"><div class="kpi-label">Registros filtrados</div><div class="kpi-value" id="kpi-count">—</div><div class="kpi-sub">de <span id="kpi-total">—</span> totales</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card full">
+      <div class="chart-title">Evolución RAM mensual</div>
+      <div class="chart-wrap tall"><canvas id="chart-ram"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">RAM anual por sucursal</div>
+      <div class="chart-wrap"><canvas id="chart-anual"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">% Retención promedio por año</div>
+      <div class="chart-wrap"><canvas id="chart-pct"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">EGMs por año</div>
+      <div class="chart-wrap"><canvas id="chart-egms"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">RAM promedio por mes del año</div>
+      <div class="chart-wrap"><canvas id="chart-mes"></canvas></div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Detalle mensual</div>
+      <div class="table-count" id="tbl-count">—</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('sucursal')">Sucursal <span class="sort-icon" id="sort-sucursal">↕</span></th>
+            <th onclick="sortTable('anio')">Año <span class="sort-icon" id="sort-anio">↕</span></th>
+            <th onclick="sortTable('numero_mes')">Mes <span class="sort-icon" id="sort-numero_mes">↕</span></th>
+            <th onclick="sortTable('ram')">RAM $ <span class="sort-icon" id="sort-ram">↕</span></th>
+            <th onclick="sortTable('apuestas')">Apuestas $ <span class="sort-icon" id="sort-apuestas">↕</span></th>
+            <th onclick="sortTable('porcentaje')">% Ret. <span class="sort-icon" id="sort-porcentaje">↕</span></th>
+            <th onclick="sortTable('egms')">EGMs <span class="sort-icon" id="sort-egms">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const NUM_MES = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,Julio:7,Agosto:8,Septiembre:9,Octubre:10,Noviembre:11,Diciembre:12};
+
+function parseNum(v) {
+  if (!v || v === '' || v === '0') return 0;
+  let s = String(v).replace(/\$/g,'').replace(/\s/g,'').trim();
+  // handle European format: 3.294.754,18 or 3294754,18
+  if (s.includes(',') && s.includes('.')) { s = s.replace(/\./g,'').replace(',','.'); }
+  else if (s.includes(',')) { s = s.replace(',','.'); }
+  else { s = s.replace(/\./g,''); }
+  return parseFloat(s) || 0;
+}
+function parsePct(v) {
+  if (!v) return null;
+  return parseFloat(String(v).replace('%','').replace(',','.'));
+}
+function fmt(n) {
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(0) + 'K';
+  return '$' + n.toFixed(0);
+}
+function fmtFull(n) {
+  return '$' + n.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+const RAW = [
+["CURUZU CUATIA",2018,"Enero",3294754.18,54080940.68,93.91,139],
+["CURUZU CUATIA",2018,"Febrero",3089784.39,48744552.36,93.66,126],
+["CURUZU CUATIA",2018,"Marzo",3429902.74,58430721.74,94.13,140],
+["CURUZU CUATIA",2018,"Abril",3182124.03,53797465.81,94.08,136],
+["CURUZU CUATIA",2018,"Mayo",3040164.69,48865282.7,93.78,141],
+["CURUZU CUATIA",2018,"Junio",3150964.41,56763273.02,94.45,136],
+["CURUZU CUATIA",2018,"Julio",3962886.02,64669054.32,93.87,131],
+["CURUZU CUATIA",2018,"Agosto",3470845.62,54496983.53,93.63,126],
+["CURUZU CUATIA",2018,"Septiembre",3373955.8,53453801.04,93.69,121],
+["CURUZU CUATIA",2018,"Octubre",3469129.82,50476415.17,93.13,122],
+["CURUZU CUATIA",2018,"Noviembre",3483958.08,53296028.21,93.46,119],
+["CURUZU CUATIA",2018,"Diciembre",4128969.6,66125867.83,93.76,124],
+["CURUZU CUATIA",2019,"Enero",3915057.02,59128920.04,93.38,124],
+["CURUZU CUATIA",2019,"Febrero",3125668.63,50072264.68,93.76,112],
+["CURUZU CUATIA",2019,"Marzo",4306713.56,67850148.43,93.65,125],
+["CURUZU CUATIA",2019,"Abril",4262469.22,62977934.62,93.23,123],
+["CURUZU CUATIA",2019,"Mayo",4374955.12,63544027.7,93.12,127],
+["CURUZU CUATIA",2019,"Junio",4799555.27,68806675.97,93.02,123],
+["CURUZU CUATIA",2019,"Julio",5038515.21,65064590.36,92.26,127],
+["CURUZU CUATIA",2019,"Agosto",4425844.27,58870597.01,92.48,127],
+["CURUZU CUATIA",2019,"Septiembre",4406622.12,62329357.7,92.93,123],
+["CURUZU CUATIA",2019,"Octubre",4679660.88,64850772.45,92.78,127],
+["CURUZU CUATIA",2019,"Noviembre",4489888.11,59645576.12,92.47,123],
+["CURUZU CUATIA",2019,"Diciembre",5432729.36,108885968.2,95.01,127],
+["CURUZU CUATIA",2020,"Enero",5725563.17,77000083.18,92.56,127],
+["CURUZU CUATIA",2020,"Febrero",5373979.55,76714867.24,92.99,119],
+["CURUZU CUATIA",2020,"Marzo",2590472.46,35770608.03,92.76,127],
+["CURUZU CUATIA",2020,"Abril",0,0,null,123],
+["CURUZU CUATIA",2020,"Mayo",0,0,null,127],
+["CURUZU CUATIA",2020,"Junio",0,0,null,123],
+["CURUZU CUATIA",2020,"Julio",0,0,null,127],
+["CURUZU CUATIA",2020,"Agosto",0,0,null,127],
+["CURUZU CUATIA",2020,"Septiembre",0,0,null,123],
+["CURUZU CUATIA",2020,"Octubre",36355.52,422111.75,91.39,127],
+["CURUZU CUATIA",2020,"Noviembre",1985703.57,24839391.28,92.01,123],
+["CURUZU CUATIA",2020,"Diciembre",2733062.66,40028366.44,93.17,127],
+["CURUZU CUATIA",2021,"Enero",3213131.56,42394233.85,92.42,127],
+["CURUZU CUATIA",2021,"Febrero",3400214.05,46336005.46,92.66,115],
+["CURUZU CUATIA",2021,"Marzo",1928495.81,30966483.89,93.77,127],
+["CURUZU CUATIA",2021,"Abril",2387337.94,32401033.34,92.63,123],
+["CURUZU CUATIA",2021,"Mayo",1413800.12,23220323.53,93.91,127],
+["CURUZU CUATIA",2021,"Junio",843943.55,12006335.62,92.97,122],
+["CURUZU CUATIA",2021,"Julio",4951820.10,64321867.79,92.30,127],
+["CURUZU CUATIA",2021,"Agosto",5160182.76,72330605.82,92.87,127],
+["CURUZU CUATIA",2021,"Septiembre",5512316.24,72932239.19,92.44,123],
+["CURUZU CUATIA",2021,"Octubre",7274067.86,103488882.89,92.97,127],
+["CURUZU CUATIA",2021,"Noviembre",7312865.63,98227131.52,92.56,123],
+["CURUZU CUATIA",2021,"Diciembre",8694118.22,119272114.39,92.71,127],
+["CURUZU CUATIA",2022,"Enero",8288356.54,97373790.43,91.49,127],
+["CURUZU CUATIA",2022,"Febrero",8130315.61,95100670.63,91.45,114],
+["CURUZU CUATIA",2022,"Marzo",9099358.69,118075429.35,92.29,125],
+["CURUZU CUATIA",2022,"Abril",11113805.98,134256668.31,91.72,121],
+["CURUZU CUATIA",2022,"Mayo",11629280.24,131701480.57,91.17,125],
+["CURUZU CUATIA",2022,"Junio",12305370.25,162775079.78,92.44,121],
+["CURUZU CUATIA",2022,"Julio",15736391.23,194396157.23,91.90,125],
+["CURUZU CUATIA",2022,"Agosto",13076446.92,173251303.50,92.45,125],
+["CURUZU CUATIA",2022,"Septiembre",14540337.64,188420625.01,92.28,121],
+["CURUZU CUATIA",2022,"Octubre",14075718.89,199666049.40,92.95,125],
+["CURUZU CUATIA",2022,"Noviembre",13654454.68,193833418.30,92.96,121],
+["CURUZU CUATIA",2022,"Diciembre",16297812.91,237246946.47,93.13,125],
+["CURUZU CUATIA",2023,"Enero",21766573.68,278444154.68,92.18,127],
+["CURUZU CUATIA",2023,"Febrero",19314447.17,233680924.04,91.73,116],
+["CURUZU CUATIA",2023,"Marzo",18501671.77,255785806.32,92.77,128],
+["CURUZU CUATIA",2023,"Abril",23231306.37,305545223.88,92.40,124],
+["CURUZU CUATIA",2023,"Mayo",22521445.14,327691422.37,93.13,128],
+["CURUZU CUATIA",2023,"Junio",24489418.42,361430264.26,93.22,126],
+["CURUZU CUATIA",2023,"Julio",30727998.20,406475261.52,92.44,130],
+["CURUZU CUATIA",2023,"Agosto",27842600.95,361635975.24,92.30,131],
+["CURUZU CUATIA",2023,"Septiembre",28045497.19,424743865.98,93.40,127],
+["CURUZU CUATIA",2023,"Octubre",31258679.07,454471739.25,93.12,132],
+["CURUZU CUATIA",2023,"Noviembre",28580392.37,441804455.16,93.53,129],
+["CURUZU CUATIA",2023,"Diciembre",28760450.90,1883493297.49,98.47,138],
+["CURUZU CUATIA",2024,"Enero",29688224.55,536217854.91,94.46,138],
+["CURUZU CUATIA",2024,"Febrero",24889683.01,451140791.03,94.48,129],
+["CURUZU CUATIA",2024,"Marzo",31975032.28,483697382.72,93.39,129],
+["CURUZU CUATIA",2024,"Abril",33487939.24,476783141.43,92.98,128],
+["CURUZU CUATIA",2024,"Mayo",34266561.62,495335019.09,93.08,128],
+["CURUZU CUATIA",2024,"Junio",41105636.86,617347933.20,93.34,127],
+["CURUZU CUATIA",2024,"Julio",46973902.88,658109213.97,92.86,127],
+["CURUZU CUATIA",2024,"Agosto",50683547.47,699806576.02,92.76,127],
+["CURUZU CUATIA",2024,"Septiembre",42894892.02,577404958.35,92.57,127],
+["CURUZU CUATIA",2024,"Octubre",43555714.84,610310136.69,92.86,129],
+["CURUZU CUATIA",2024,"Noviembre",46681409.78,718101040.42,93.50,119],
+["CURUZU CUATIA",2024,"Diciembre",52206293.94,727195477.37,92.82,103],
+["CURUZU CUATIA",2025,"Enero",49881518.48,701124179.18,92.89,103],
+["CURUZU CUATIA",2025,"Febrero",44374863.51,634614559.68,93.01,93],
+["CURUZU CUATIA",2025,"Marzo",51345652.25,708288324.24,92.75,103],
+["CURUZU CUATIA",2025,"Abril",46757935.93,597732327.45,92.18,93],
+["CURUZU CUATIA",2025,"Mayo",52486770.52,718010088.73,92.69,93],
+["CURUZU CUATIA",2025,"Junio",60921042.13,786109957.83,92.25,93],
+["CURUZU CUATIA",2025,"Julio",64516144.01,934780611.33,93.10,93],
+["CURUZU CUATIA",2025,"Agosto",59843562.42,961627350.51,93.78,93],
+["CURUZU CUATIA",2025,"Septiembre",68296993.89,980131977.45,93.03,94],
+["CURUZU CUATIA",2025,"Octubre",52403610.85,861708278.52,93.92,95],
+["CURUZU CUATIA",2025,"Noviembre",63003629.22,888148502.00,92.91,93],
+["CURUZU CUATIA",2025,"Diciembre",63676320.74,914161318.63,93.03,93],
+["CURUZU CUATIA",2026,"Enero",80044956.84,1089407585.88,92.65,93],
+["CURUZU CUATIA",2026,"Febrero",63980170.19,916337664.01,93.02,84],
+["CURUZU CUATIA",2026,"Marzo",66591204.92,911969741.86,92.70,93],
+["CURUZU CUATIA",2026,"Abril",61681596.17,805070143.51,92.34,93],
+["CURUZU CUATIA",2026,"Mayo",60873397.09,868609890.80,92.99,93],
+["CURUZU CUATIA",2026,"Junio",63694734.77,786320391.34,91.90,93],
+["CURUZU CUATIA",2026,"Julio",71205475.64,998238128.52,92.87,87],
+["CURUZU CUATIA",2026,"Agosto",44574172.12,701937926.63,93.65,0],
+["CURUZU CUATIA",2026,"Septiembre",0,0,null,0],
+["CURUZU CUATIA",2026,"Octubre",0,0,null,0],
+["CURUZU CUATIA",2026,"Noviembre",0,0,null,0],
+["CURUZU CUATIA",2026,"Diciembre",0,0,null,0],
+["ANEXO CCUATIA",2018,"Enero",862951.98,13416867.88,93.57,0],
+["ANEXO CCUATIA",2018,"Febrero",683335.85,9788647.38,93.02,0],
+["ANEXO CCUATIA",2018,"Marzo",913236.7,13813336.3,93.39,0],
+["ANEXO CCUATIA",2018,"Abril",917866.42,13294830.92,93.10,0],
+["ANEXO CCUATIA",2018,"Mayo",772340.57,13660745.71,94.35,0],
+["ANEXO CCUATIA",2018,"Junio",886936.11,14874575.72,94.04,0],
+["ANEXO CCUATIA",2018,"Julio",996876.63,16194851.16,93.84,0],
+["ANEXO CCUATIA",2018,"Agosto",782899.89,15572287.98,94.97,0],
+["ANEXO CCUATIA",2018,"Septiembre",906206.92,15449464.06,94.13,0],
+["ANEXO CCUATIA",2018,"Octubre",979193.01,13354896.15,92.67,0],
+["ANEXO CCUATIA",2018,"Noviembre",874599.48,11733951.1,92.55,0],
+["ANEXO CCUATIA",2018,"Diciembre",1119849.62,17316916.95,93.53,0],
+["ANEXO CCUATIA",2019,"Enero",883395.17,12990580.42,93.20,52],
+["ANEXO CCUATIA",2019,"Febrero",632457.03,13546282.05,95.33,52],
+["ANEXO CCUATIA",2019,"Marzo",1073389.47,19218188.04,94.41,53],
+["ANEXO CCUATIA",2019,"Abril",1222246.86,18080588.02,93.24,54],
+["ANEXO CCUATIA",2019,"Mayo",1316908.81,22719075.06,94.20,54],
+["ANEXO CCUATIA",2019,"Junio",1426118.27,21992119.15,93.52,54],
+["ANEXO CCUATIA",2019,"Julio",1208401.72,21468483.87,94.37,54],
+["ANEXO CCUATIA",2019,"Agosto",986321.39,20882703.1,95.28,54],
+["ANEXO CCUATIA",2019,"Septiembre",1333031.49,20430742.27,93.48,54],
+["ANEXO CCUATIA",2019,"Octubre",1276209.17,21214357.61,93.98,54],
+["ANEXO CCUATIA",2019,"Noviembre",1214371.22,16323952.55,92.56,54],
+["ANEXO CCUATIA",2019,"Diciembre",1075644.69,20864571.62,94.84,54],
+["ANEXO CCUATIA",2020,"Enero",1218638.73,19112958.63,93.62,53],
+["ANEXO CCUATIA",2020,"Febrero",1150275.45,17672832.8,93.49,53],
+["ANEXO CCUATIA",2020,"Marzo",567089,7869694.55,92.79,53],
+["ANEXO CCUATIA",2020,"Abril",0,0,null,53],
+["ANEXO CCUATIA",2020,"Mayo",0,0,null,53],
+["ANEXO CCUATIA",2020,"Junio",0,0,null,53],
+["ANEXO CCUATIA",2020,"Julio",0,0,null,53],
+["ANEXO CCUATIA",2020,"Agosto",0,0,null,53],
+["ANEXO CCUATIA",2020,"Septiembre",0,0,null,53],
+["ANEXO CCUATIA",2020,"Octubre",7250.6,130781.15,94.46,53],
+["ANEXO CCUATIA",2020,"Noviembre",636535.49,8207593.5,92.24,53],
+["ANEXO CCUATIA",2020,"Diciembre",949525.58,16066384.85,94.09,53],
+["ANEXO CCUATIA",2021,"Enero",1057667.04,14868581.05,92.89,53],
+["ANEXO CCUATIA",2021,"Febrero",968096.36,18196591.55,94.68,53],
+["ANEXO CCUATIA",2021,"Marzo",653121.11,8840829.4,92.61,53],
+["ANEXO CCUATIA",2021,"Abril",800605.05,12427263.4,93.56,53],
+["ANEXO CCUATIA",2021,"Mayo",914334.55,10157824,91.00,53],
+["ANEXO CCUATIA",2021,"Junio",342110.85,3476150.55,90.16,53],
+["ANEXO CCUATIA",2021,"Julio",1743360.31,17872000.85,90.25,53],
+["ANEXO CCUATIA",2021,"Agosto",1671378.95,23043596.4,92.75,53],
+["ANEXO CCUATIA",2021,"Septiembre",1905720.25,23588642.85,91.92,53],
+["ANEXO CCUATIA",2021,"Octubre",1858716.21,23279623.3,92.02,53],
+["ANEXO CCUATIA",2021,"Noviembre",1738513.35,24096409,92.79,53],
+["ANEXO CCUATIA",2021,"Diciembre",2085513.8,30434890.4,93.15,53],
+["ANEXO CCUATIA",2022,"Enero",1756839.75,19530456.35,91.00,53],
+["ANEXO CCUATIA",2022,"Febrero",1769215.45,21440846.4,91.75,53],
+["ANEXO CCUATIA",2022,"Marzo",2322097.33,28738125.8,91.92,53],
+["ANEXO CCUATIA",2022,"Abril",2333256.87,31964768.95,92.70,53],
+["ANEXO CCUATIA",2022,"Mayo",2470966.21,34797614,92.90,53],
+["ANEXO CCUATIA",2022,"Junio",2691050.51,33024171.4,91.85,53],
+["ANEXO CCUATIA",2022,"Julio",2973818.96,36521949.15,91.86,53],
+["ANEXO CCUATIA",2022,"Agosto",2928617.82,30202739.25,90.30,53],
+["ANEXO CCUATIA",2022,"Septiembre",2859006.13,35973287.8,92.05,53],
+["ANEXO CCUATIA",2022,"Octubre",3686401.54,40491146.3,90.90,53],
+["ANEXO CCUATIA",2022,"Noviembre",3270820.06,37494322.7,91.28,53],
+["ANEXO CCUATIA",2022,"Diciembre",3348622.45,39347944.3,91.49,53],
+["ANEXO CCUATIA",2023,"Enero",3878957.07,42834430,90.94,53],
+["ANEXO CCUATIA",2023,"Febrero",3003356.36,40244205.2,92.54,53],
+["ANEXO CCUATIA",2023,"Marzo",4007837,50257969.2,92.03,53],
+["ANEXO CCUATIA",2023,"Abril",3597265.63,52052986.15,93.09,53],
+["ANEXO CCUATIA",2023,"Mayo",3808642.62,45216617.95,91.58,53],
+["ANEXO CCUATIA",2023,"Junio",4497104.33,53503920.05,91.59,53],
+["ANEXO CCUATIA",2023,"Julio",4680670.32,54409085.5,91.40,53],
+["ANEXO CCUATIA",2023,"Agosto",5180618.7,56522796.9,90.83,53],
+["ANEXO CCUATIA",2023,"Septiembre",4882529.06,58223846.8,91.61,53],
+["ANEXO CCUATIA",2023,"Octubre",5492995.45,64038455.75,91.42,53],
+["ANEXO CCUATIA",2023,"Noviembre",6335423.22,65593876,90.34,53],
+["ANEXO CCUATIA",2023,"Diciembre",6090025.12,70208617.24,91.33,53],
+["ANEXO CCUATIA",2024,"Enero",5313906.95,99853644.5,94.68,53],
+["ANEXO CCUATIA",2024,"Febrero",4389492.76,55835377.9,92.14,53],
+["ANEXO CCUATIA",2024,"Marzo",4586755.54,67585585.55,93.21,47],
+["ANEXO CCUATIA",2024,"Abril",6250377.5,73897613.7,91.54,47],
+["ANEXO CCUATIA",2024,"Mayo",7207394.24,71692019.6,89.95,47],
+["ANEXO CCUATIA",2024,"Junio",7201284.66,80532101.75,91.06,47],
+["ANEXO CCUATIA",2024,"Julio",7770481.82,94304814.95,91.76,47],
+["ANEXO CCUATIA",2024,"Agosto",7980332.23,89656519.95,91.10,47],
+["ANEXO CCUATIA",2024,"Septiembre",9364732.63,96819369.9,90.33,47],
+["ANEXO CCUATIA",2024,"Octubre",6767084.25,82349076.6,91.78,47],
+["ANEXO CCUATIA",2024,"Noviembre",7827747.33,74069250.6,89.43,47],
+["ANEXO CCUATIA",2024,"Diciembre",8547667.03,100841390.1,91.52,42],
+["ANEXO CCUATIA",2025,"Enero",9111991.92,105615657.7,91.37,40],
+["ANEXO CCUATIA",2025,"Febrero",8682928.93,96546799.2,91.01,40],
+["ANEXO CCUATIA",2025,"Marzo",10770066.08,129115903.9,91.66,40],
+["ANEXO CCUATIA",2025,"Abril",11220559.16,127079033.2,91.17,40],
+["ANEXO CCUATIA",2025,"Mayo",11157213.64,112875788,90.12,41],
+["ANEXO CCUATIA",2025,"Junio",11249960.29,115686494.9,90.28,40],
+["ANEXO CCUATIA",2025,"Julio",14320314.1,134428009.8,89.35,40],
+["ANEXO CCUATIA",2025,"Agosto",12893094.3,128028690.2,89.93,40],
+["ANEXO CCUATIA",2025,"Septiembre",10822795.7,124978798.5,91.34,40],
+["ANEXO CCUATIA",2025,"Octubre",10423436.85,112205718.8,90.71,41],
+["ANEXO CCUATIA",2025,"Noviembre",11854122.85,132309095.1,91.04,40],
+["ANEXO CCUATIA",2025,"Diciembre",12524214.15,136427467.3,90.82,39],
+["ANEXO CCUATIA",2026,"Enero",10965806.77,117337647.2,90.65,38],
+["ANEXO CCUATIA",2026,"Febrero",9328000.95,96633352.1,90.35,38],
+["ANEXO CCUATIA",2026,"Marzo",10376171.65,116502046.9,91.09,38],
+["ANEXO CCUATIA",2026,"Abril",10016291.74,229771898.2,95.64,38],
+["ANEXO CCUATIA",2026,"Mayo",12411797.27,124486878.9,90.03,38],
+["ANEXO CCUATIA",2026,"Junio",11906850.35,139054204.9,91.44,38],
+["ANEXO CCUATIA",2026,"Julio",15105672.9,131030690.8,88.47,38],
+["ANEXO CCUATIA",2026,"Agosto",9273367.45,80266431.85,88.45,38],
+["ANEXO CCUATIA",2026,"Septiembre",0,0,null,0],
+["ANEXO CCUATIA",2026,"Octubre",0,0,null,0],
+["ANEXO CCUATIA",2026,"Noviembre",0,0,null,0],
+["ANEXO CCUATIA",2026,"Diciembre",0,0,null,0],
+];
+
+const DATA = RAW.map(r => ({
+  sucursal: r[0], anio: r[1], mes: r[2], numero_mes: NUM_MES[r[2]],
+  ram: r[3], apuestas: r[4], porcentaje: r[5], egms: r[6]
+}));
+
+document.getElementById('total-meses').textContent = DATA.length;
+document.getElementById('kpi-total').textContent = DATA.length;
+
+const anios = [...new Set(DATA.map(d=>d.anio))].sort();
+['fil-anio-desde','fil-anio-hasta'].forEach((id,i) => {
+  const sel = document.getElementById(id);
+  anios.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
+  if (i===1) sel.value = anios[anios.length-1];
+});
+document.getElementById('fil-mes-hasta').value = '12';
+
+let sortKey = 'anio', sortDir = 1;
+let charts = {};
+
+function getFiltered() {
+  const suc = document.getElementById('fil-sucursal').value;
+  const aD = +document.getElementById('fil-anio-desde').value;
+  const aH = +document.getElementById('fil-anio-hasta').value;
+  const mD = +document.getElementById('fil-mes-desde').value;
+  const mH = +document.getElementById('fil-mes-hasta').value;
+  const ceros = document.getElementById('fil-ceros').value;
+  return DATA.filter(d => {
+    if (suc && d.sucursal !== suc) return false;
+    if (d.anio < aD || d.anio > aH) return false;
+    if (d.numero_mes < mD || d.numero_mes > mH) return false;
+    if (ceros === '1' && d.ram === 0) return false;
+    return true;
+  });
+}
+
+function makeLine(ctx, datasets, labels) {
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b90a7', font: { size: 11 }, boxWidth: 12 } } },
+      scales: {
+        x: { ticks: { color: '#8b90a7', font: { size: 10 }, maxTicksLimit: 18 }, grid: { color: '#2a2f42' } },
+        y: { ticks: { color: '#8b90a7', font: { size: 10 }, callback: v => fmt(v) }, grid: { color: '#2a2f42' } }
+      }
+    }
+  });
+}
+function makeBar(ctx, datasets, labels, yFmt) {
+  return new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b90a7', font: { size: 11 }, boxWidth: 12 } } },
+      scales: {
+        x: { ticks: { color: '#8b90a7', font: { size: 10 } }, grid: { color: '#2a2f42' } },
+        y: { ticks: { color: '#8b90a7', font: { size: 10 }, callback: yFmt || (v=>fmt(v)) }, grid: { color: '#2a2f42' } }
+      }
+    }
+  });
+}
+
+function update() {
+  const filtered = getFiltered();
+  const withData = filtered.filter(d => d.ram > 0);
+
+  // KPIs
+  const totalRam = withData.reduce((s,d)=>s+d.ram,0);
+  const totalAp = withData.reduce((s,d)=>s+d.apuestas,0);
+  const pcts = withData.filter(d=>d.porcentaje!=null).map(d=>d.porcentaje);
+  const avgPct = pcts.length ? pcts.reduce((a,b)=>a+b,0)/pcts.length : 0;
+  const egmsArr = withData.filter(d=>d.egms>0).map(d=>d.egms);
+  const avgEgms = egmsArr.length ? egmsArr.reduce((a,b)=>a+b,0)/egmsArr.length : 0;
+  const bestMes = withData.length ? withData.reduce((a,b)=>b.ram>a.ram?b:a) : null;
+
+  document.getElementById('kpi-ram').textContent = fmt(totalRam);
+  document.getElementById('kpi-ram-sub').textContent = withData.length + ' meses con datos';
+  document.getElementById('kpi-ap').textContent = fmt(totalAp);
+  document.getElementById('kpi-ap-sub').textContent = 'promedio ' + fmt(totalAp/(withData.length||1)) + '/mes';
+  document.getElementById('kpi-pct').textContent = avgPct.toFixed(2) + '%';
+  document.getElementById('kpi-pct-sub').textContent = 'min ' + (pcts.length?Math.min(...pcts).toFixed(2):'-') + '% · max ' + (pcts.length?Math.max(...pcts).toFixed(2):'-') + '%';
+  document.getElementById('kpi-egms').textContent = Math.round(avgEgms);
+  document.getElementById('kpi-egms-sub').textContent = egmsArr.length + ' registros con EGMs';
+  document.getElementById('kpi-best').textContent = bestMes ? fmt(bestMes.ram) : '—';
+  document.getElementById('kpi-best-sub').textContent = bestMes ? bestMes.mes+' '+bestMes.anio+' · '+bestMes.sucursal : '—';
+  document.getElementById('kpi-count').textContent = filtered.length;
+
+  // Chart RAM mensual
+  const suc1 = withData.filter(d=>d.sucursal==='CURUZU CUATIA').sort((a,b)=>a.anio-b.anio||a.numero_mes-b.numero_mes);
+  const suc2 = withData.filter(d=>d.sucursal==='ANEXO CCUATIA').sort((a,b)=>a.anio-b.anio||a.numero_mes-b.numero_mes);
+  const allLabels = [...new Set(withData.sort((a,b)=>a.anio-b.anio||a.numero_mes-b.numero_mes).map(d=>d.anio+'-'+String(d.numero_mes).padStart(2,'0')))];
+
+  if (charts.ram) charts.ram.destroy();
+  charts.ram = makeLine(document.getElementById('chart-ram'), [
+    { label:'Curuzu Cuatia', data: allLabels.map(l=>{ const d=suc1.find(r=>r.anio+'-'+String(r.numero_mes).padStart(2,'0')===l); return d?d.ram:null; }), borderColor:'#4f7ef7', backgroundColor:'rgba(79,126,247,0.08)', borderWidth:2, pointRadius:2, tension:0.3, spanGaps:false },
+    { label:'Anexo CCuatia', data: allLabels.map(l=>{ const d=suc2.find(r=>r.anio+'-'+String(r.numero_mes).padStart(2,'0')===l); return d?d.ram:null; }), borderColor:'#f7a84f', backgroundColor:'rgba(247,168,79,0.08)', borderWidth:2, pointRadius:2, tension:0.3, spanGaps:false }
+  ], allLabels.map(l=>{ const p=l.split('-'); return MESES[+p[1]-1].substr(0,3)+' '+p[0]; }));
+
+  // Chart RAM anual
+  const ramAnual = {};
+  withData.forEach(d => {
+    if (!ramAnual[d.anio]) ramAnual[d.anio] = {cc:0,ax:0};
+    if (d.sucursal==='CURUZU CUATIA') ramAnual[d.anio].cc += d.ram;
+    else ramAnual[d.anio].ax += d.ram;
+  });
+  const aYears = Object.keys(ramAnual).sort();
+  if (charts.anual) charts.anual.destroy();
+  charts.anual = makeBar(document.getElementById('chart-anual'), [
+    { label:'Curuzu Cuatia', data: aYears.map(y=>ramAnual[y].cc), backgroundColor:'rgba(79,126,247,0.7)', borderRadius:4 },
+    { label:'Anexo CCuatia', data: aYears.map(y=>ramAnual[y].ax), backgroundColor:'rgba(247,168,79,0.7)', borderRadius:4 }
+  ], aYears);
+
+  // Chart % retención
+  const pctAnual = {};
+  withData.filter(d=>d.porcentaje!=null).forEach(d => {
+    if (!pctAnual[d.anio]) pctAnual[d.anio] = {cc:[],ax:[]};
+    if (d.sucursal==='CURUZU CUATIA') pctAnual[d.anio].cc.push(d.porcentaje);
+    else pctAnual[d.anio].ax.push(d.porcentaje);
+  });
+  const pYears = Object.keys(pctAnual).sort();
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+  if (charts.pct) charts.pct.destroy();
+  charts.pct = makeBar(document.getElementById('chart-pct'), [
+    { label:'Curuzu Cuatia', data: pYears.map(y=>avg(pctAnual[y].cc)), backgroundColor:'rgba(79,198,152,0.7)', borderRadius:4 },
+    { label:'Anexo CCuatia', data: pYears.map(y=>avg(pctAnual[y].ax)), backgroundColor:'rgba(167,139,250,0.7)', borderRadius:4 }
+  ], pYears, v=>v!=null?v.toFixed(2)+'%':null);
+
+  // Chart EGMs
+  const egmsAnual = {};
+  withData.filter(d=>d.egms>0).forEach(d => {
+    if (!egmsAnual[d.anio]) egmsAnual[d.anio] = {cc:[],ax:[]};
+    if (d.sucursal==='CURUZU CUATIA') egmsAnual[d.anio].cc.push(d.egms);
+    else egmsAnual[d.anio].ax.push(d.egms);
+  });
+  const eYears = Object.keys(egmsAnual).sort();
+  if (charts.egms) charts.egms.destroy();
+  charts.egms = makeBar(document.getElementById('chart-egms'), [
+    { label:'Curuzu Cuatia', data: eYears.map(y=>avg(egmsAnual[y].cc)), backgroundColor:'rgba(79,126,247,0.5)', borderRadius:4 },
+    { label:'Anexo CCuatia', data: eYears.map(y=>avg(egmsAnual[y].ax)), backgroundColor:'rgba(247,95,95,0.5)', borderRadius:4 }
+  ], eYears, v=>Math.round(v));
+
+  // Chart RAM por mes del año
+  const mesProm = {};
+  withData.forEach(d => {
+    if (!mesProm[d.numero_mes]) mesProm[d.numero_mes] = {cc:[],ax:[]};
+    if (d.sucursal==='CURUZU CUATIA') mesProm[d.numero_mes].cc.push(d.ram);
+    else mesProm[d.numero_mes].ax.push(d.ram);
+  });
+  if (charts.mes) charts.mes.destroy();
+  charts.mes = makeBar(document.getElementById('chart-mes'), [
+    { label:'Curuzu Cuatia', data: MESES.map((_,i)=>avg((mesProm[i+1]||{cc:[]}).cc)), backgroundColor:'rgba(79,126,247,0.7)', borderRadius:4 },
+    { label:'Anexo CCuatia', data: MESES.map((_,i)=>avg((mesProm[i+1]||{ax:[]}).ax)), backgroundColor:'rgba(247,168,79,0.7)', borderRadius:4 }
+  ], MESES.map(m=>m.substr(0,3)));
+
+  // Tabla
+  const sorted = [...filtered].sort((a,b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (typeof va === 'string') return sortDir * va.localeCompare(vb);
+    return sortDir * (va - vb);
+  });
+  document.getElementById('tbl-count').textContent = sorted.length + ' registros';
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = sorted.map(d => {
+    const isCero = d.ram === 0;
+    const badgeCls = isCero ? 'badge-zero' : (d.sucursal==='CURUZU CUATIA'?'badge-cc':'badge-ax');
+    const label = isCero ? 'Cerrado' : (d.sucursal==='CURUZU CUATIA'?'CC':'AX');
+    const pctBar = d.porcentaje!=null ? `<div class="pct-bar"><span class="num">${d.porcentaje.toFixed(2)}%</span><div class="pct-bg"><div class="pct-fill" style="width:${Math.min(100,(d.porcentaje-88)/12*100)}%"></div></div></div>` : '—';
+    return `<tr>
+      <td><span class="badge ${badgeCls}">${label}</span> ${d.sucursal==='CURUZU CUATIA'?'Curuzu Cuatia':'Anexo CCuatia'}</td>
+      <td class="num">${d.anio}</td>
+      <td>${d.mes}</td>
+      <td class="num">${d.ram>0?fmtFull(d.ram):'—'}</td>
+      <td class="num">${d.apuestas>0?fmtFull(d.apuestas):'—'}</td>
+      <td>${pctBar}</td>
+      <td class="num">${d.egms>0?d.egms:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function sortTable(key) {
+  if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+  document.querySelectorAll('.sort-icon').forEach(el => { el.classList.remove('active'); el.textContent='↕'; });
+  const el = document.getElementById('sort-'+key);
+  if (el) { el.classList.add('active'); el.textContent = sortDir===1?'↑':'↓'; }
+  update();
+}
+
+function resetFiltros() {
+  document.getElementById('fil-sucursal').value='';
+  document.getElementById('fil-anio-desde').value=anios[0];
+  document.getElementById('fil-anio-hasta').value=anios[anios.length-1];
+  document.getElementById('fil-mes-desde').value='1';
+  document.getElementById('fil-mes-hasta').value='12';
+  document.getElementById('fil-ceros').value='0';
+  update();
+}
+
+['fil-sucursal','fil-anio-desde','fil-anio-hasta','fil-mes-desde','fil-mes-hasta','fil-ceros'].forEach(id => {
+  document.getElementById(id).addEventListener('change', update);
+});
+
+update();
+</script>
+</body>
+</html>
