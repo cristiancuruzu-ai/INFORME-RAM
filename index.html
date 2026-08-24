@@ -180,13 +180,13 @@
 
 <header>
   <div>
-    <div class="logo">Casino <span> MHE </span></div>
-    <div class="header-sub"> RAM REPORTE · 2018–2026</div>
+    <div class="logo">Casino <span>MHE</span></div>
+    <div class="header-sub">HISTORICO RAM · 2018–2026</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
     <div style="font-size:12px;color:var(--text2)">2 sucursales · <span id="total-meses">—</span> registros</div>
     <label id="csv-btn" style="background:var(--accent);color:#fff;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">
-      ⬆ Subir CSV
+      🔄 Actualizar datos
       <input type="file" accept=".csv,.txt" id="csv-input" style="display:none">
     </label>
     <span id="csv-status" style="font-size:12px;color:var(--green);display:none">✓ Datos cargados</span>
@@ -197,9 +197,6 @@
   <label>Sucursal
     <select id="fil-sucursal">
       <option value="">Todas</option>
-      <option value="CURUZU CUATIA">Curuzu Cuatia</option>
-      <option value="MONTE CASEROS">Curuzu Cuatia</option>
-      <option value="ANEXO CCUATIA">Anexo CCuatia</option>
     </select>
   </label>
   <label>Año desde
@@ -253,7 +250,7 @@
       <div class="chart-wrap"><canvas id="chart-anual"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">% Retención promedio por año</div>
+      <div class="chart-title">%  Porc.prom por año</div>
       <div class="chart-wrap"><canvas id="chart-pct"></canvas></div>
     </div>
     <div class="chart-card">
@@ -315,6 +312,78 @@ function fmt(n) {
 }
 function fmtFull(n) {
   return '$' + n.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+const CSV_URL = 'https://raw.githubusercontent.com/cristiancuruzu-ai/INFORME-RAM/main/datos.csv';
+
+async function cargarCSV() {
+  try {
+    const res = await fetch(CSV_URL + '?t=' + Date.now());
+    if (!res.ok) throw new Error('No se encontró datos.csv en el repositorio');
+    const text = await res.text();
+    const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+    if (lines.length < 2) throw new Error('CSV vacío');
+    const header = lines[0];
+    const sep = header.includes('\t') ? '\t' : header.includes(';') ? ';' : ',';
+    const cols = header.split(sep).map(c=>c.trim().replace(/"/g,'').toLowerCase());
+    const idxSuc = cols.findIndex(c=>c.includes('sucursal'));
+    const idxAnio = cols.findIndex(c=>c.includes('o') && (c.includes('a') || c.includes('ñ')) || c==='year');
+    const idxMes = cols.findIndex(c=>c==='mes'||c==='month');
+    const idxRam = cols.findIndex(c=>c==='ram');
+    const idxAp = cols.findIndex(c=>c.includes('apuesta'));
+    const idxPct = cols.findIndex(c=>c==='%'||c.includes('pct')||c.includes('porc'));
+    const idxEgms = cols.findIndex(c=>c==='egms');
+    const newData = [];
+    for (let i=1; i<lines.length; i++) {
+      const row = lines[i].split(sep).map(c=>c.trim().replace(/"/g,''));
+      if (!row[idxSuc]) continue;
+      const mes = row[idxMes]||'';
+      const numMes = NUM_MES[mes];
+      if (!numMes) continue;
+      newData.push({
+        sucursal: row[idxSuc], anio: parseInt(row[idxAnio])||0, mes, numero_mes: numMes,
+        ram: parseNum(row[idxRam]), apuestas: idxAp>=0?parseNum(row[idxAp]):0,
+        porcentaje: idxPct>=0?parsePct(row[idxPct]):null, egms: idxEgms>=0?(parseInt(row[idxEgms])||0):0
+      });
+    }
+    DATA.length = 0;
+    newData.forEach(d=>DATA.push(d));
+    actualizarSelectores();
+    document.getElementById('csv-status').textContent = '✓ Datos actualizados desde GitHub';
+    document.getElementById('csv-status').style.display = 'inline';
+    setTimeout(()=>document.getElementById('csv-status').style.display='none', 4000);
+    update();
+  } catch(err) {
+    console.warn('CSV no encontrado, usando datos internos:', err.message);
+    iniciarConDatosInternos();
+  }
+}
+
+function iniciarConDatosInternos() {
+  actualizarSelectores();
+  update();
+}
+
+function actualizarSelectores() {
+  // Años
+  const nuevosAnios = [...new Set(DATA.map(d=>d.anio))].sort();
+  ['fil-anio-desde','fil-anio-hasta'].forEach((id,i)=>{
+    const sel=document.getElementById(id); sel.innerHTML='';
+    nuevosAnios.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;sel.appendChild(o);});
+    if(i===1) sel.value=nuevosAnios[nuevosAnios.length-1];
+  });
+  // Sucursales — dinámico
+  const sucursales = [...new Set(DATA.map(d=>d.sucursal))].sort();
+  const selSuc = document.getElementById('fil-sucursal');
+  selSuc.innerHTML = '<option value="">Todas</option>';
+  sucursales.forEach(s=>{
+    const o=document.createElement('option');
+    o.value=s;
+    o.textContent=s.charAt(0)+s.slice(1).toLowerCase();
+    selSuc.appendChild(o);
+  });
+  document.getElementById('total-meses').textContent = DATA.length;
+  document.getElementById('kpi-total').textContent = DATA.length;
 }
 
 const RAW = [
@@ -541,15 +610,8 @@ const DATA = RAW.map(r => ({
   ram: r[3], apuestas: r[4], porcentaje: r[5], egms: r[6]
 }));
 
-document.getElementById('total-meses').textContent = DATA.length;
+document.getElementById('total-meses').textContent = '…';
 document.getElementById('kpi-total').textContent = DATA.length;
-
-const anios = [...new Set(DATA.map(d=>d.anio))].sort();
-['fil-anio-desde','fil-anio-hasta'].forEach((id,i) => {
-  const sel = document.getElementById(id);
-  anios.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
-  if (i===1) sel.value = anios[anios.length-1];
-});
 document.getElementById('fil-mes-hasta').value = '12';
 
 let sortKey = 'anio', sortDir = 1;
@@ -739,7 +801,18 @@ function resetFiltros() {
   document.getElementById(id).addEventListener('change', update);
 });
 
-// CSV loader
+// Arrancar cargando desde GitHub
+cargarCSV();
+
+// Botón manual de recarga
+document.getElementById('csv-btn').addEventListener('click', function(e) {
+  if (e.target.tagName !== 'INPUT') {
+    e.preventDefault();
+    cargarCSV();
+  }
+});
+
+// CSV loader manual (subir archivo local)
 document.getElementById('csv-input').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -787,31 +860,15 @@ document.getElementById('csv-input').addEventListener('change', function(e) {
     // Reemplazar DATA
     DATA.length = 0;
     newData.forEach(d => DATA.push(d));
-
-    // Actualizar selector de años
-    const nuevosAnios = [...new Set(DATA.map(d=>d.anio))].sort();
-    ['fil-anio-desde','fil-anio-hasta'].forEach((id,i) => {
-      const sel = document.getElementById(id);
-      sel.innerHTML = '';
-      nuevosAnios.forEach(a => { const o = document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
-      if (i===1) sel.value = nuevosAnios[nuevosAnios.length-1];
-    });
-
-    document.getElementById('total-meses').textContent = DATA.length;
-    document.getElementById('kpi-total').textContent = DATA.length;
+    actualizarSelectores();
+    document.getElementById('csv-status').textContent = '✓ Datos cargados';
     document.getElementById('csv-status').style.display = 'inline';
     setTimeout(()=>document.getElementById('csv-status').style.display='none', 3000);
     e.target.value = '';
-    update();
   };
   reader.readAsText(file, 'UTF-8');
 });
+</script>
+</body>
+</html>
 
-update();
-</script>
-</body>
-</html>
-update();
-</script>
-</body>
-</html>
