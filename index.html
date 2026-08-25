@@ -180,8 +180,8 @@
 
 <header>
   <div>
-    <div class="logo">Casino <span>MHE</span></div>
-    <div class="header-sub">HISTORICO RAM · 2018–2026</div>
+    <div class="logo">Casino <span>Analytics</span></div>
+    <div class="header-sub">Corrientes · 2018–2026</div>
   </div>
   <div style="display:flex;align-items:center;gap:12px">
     <div style="font-size:12px;color:var(--text2)">2 sucursales · <span id="total-meses">—</span> registros</div>
@@ -234,7 +234,7 @@
   <div class="kpi-grid">
     <div class="kpi accent"><div class="kpi-label">RAM Total</div><div class="kpi-value" id="kpi-ram">—</div><div class="kpi-sub" id="kpi-ram-sub">—</div></div>
     <div class="kpi orange"><div class="kpi-label">Apuestas Totales</div><div class="kpi-value" id="kpi-ap">—</div><div class="kpi-sub" id="kpi-ap-sub">—</div></div>
-    <div class="kpi green"><div class="kpi-label">% Prom.</div><div class="kpi-value" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">—</div></div>
+    <div class="kpi green"><div class="kpi-label">% Retención Prom.</div><div class="kpi-value" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">—</div></div>
     <div class="kpi purple"><div class="kpi-label">EGMs Promedio</div><div class="kpi-value" id="kpi-egms">—</div><div class="kpi-sub" id="kpi-egms-sub">—</div></div>
     <div class="kpi"><div class="kpi-label">Mejor Mes RAM</div><div class="kpi-value" id="kpi-best" style="font-size:16px">—</div><div class="kpi-sub" id="kpi-best-sub">—</div></div>
     <div class="kpi"><div class="kpi-label">Registros filtrados</div><div class="kpi-value" id="kpi-count">—</div><div class="kpi-sub">de <span id="kpi-total">—</span> totales</div></div>
@@ -250,7 +250,7 @@
       <div class="chart-wrap"><canvas id="chart-anual"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-title">%  Porc.prom por año</div>
+      <div class="chart-title">% Retención promedio por año</div>
       <div class="chart-wrap"><canvas id="chart-pct"></canvas></div>
     </div>
     <div class="chart-card">
@@ -320,14 +320,18 @@ async function cargarCSV() {
   try {
     const res = await fetch(CSV_URL + '?t=' + Date.now());
     if (!res.ok) throw new Error('No se encontró datos.csv en el repositorio');
-    const text = await res.text();
-    const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+    const buffer = await res.arrayBuffer();
+    const decoder = new TextDecoder('utf-8');
+    let text = decoder.decode(buffer);
+    // Limpiar BOM y comillas envolventes de cada línea
+    text = text.replace(/^\uFEFF/, '');
+    const lines = text.split('\n').map(l=>l.trim().replace(/^"|"$/g,'')).filter(l=>l);
     if (lines.length < 2) throw new Error('CSV vacío');
     const header = lines[0];
     const sep = header.includes('\t') ? '\t' : header.includes(';') ? ';' : ',';
     const cols = header.split(sep).map(c=>c.trim().replace(/"/g,'').toLowerCase());
     const idxSuc = cols.findIndex(c=>c.includes('sucursal'));
-    const idxAnio = cols.findIndex(c=>c.includes('o') && (c.includes('a') || c.includes('ñ')) || c==='year');
+    const idxAnio = cols.findIndex(c=>c.includes('a') && (c.includes('o') || c.includes('ñ') || c.includes('ã')) || c==='year' || c==='anio' || c==='año');
     const idxMes = cols.findIndex(c=>c==='mes'||c==='month');
     const idxRam = cols.findIndex(c=>c==='ram');
     const idxAp = cols.findIndex(c=>c.includes('apuesta'));
@@ -819,16 +823,16 @@ document.getElementById('csv-input').addEventListener('change', function(e) {
   const reader = new FileReader();
   reader.onload = function(ev) {
     const text = ev.target.result;
-    const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+    text = text.replace(/^\uFEFF/, '');
+    const lines = text.split('\n').map(l=>l.trim().replace(/^"|"$/g,'')).filter(l=>l);
     if (lines.length < 2) { alert('El archivo CSV está vacío o tiene formato incorrecto.'); return; }
 
-    // Detectar separador (tab o coma o punto y coma)
     const header = lines[0];
     const sep = header.includes('\t') ? '\t' : header.includes(';') ? ';' : ',';
 
     const cols = header.split(sep).map(c=>c.trim().replace(/"/g,'').toLowerCase());
     const idxSuc = cols.findIndex(c=>c.includes('sucursal'));
-    const idxAnio = cols.findIndex(c=>c.includes('a') && c.includes('o') || c==='año' || c==='anio' || c==='year');
+    const idxAnio = cols.findIndex(c=>c.includes('a') && (c.includes('o') || c.includes('ñ') || c.includes('ã')) || c==='year' || c==='anio' || c==='año');
     const idxMes = cols.findIndex(c=>c==='mes' || c==='month');
     const idxRam = cols.findIndex(c=>c==='ram');
     const idxAp = cols.findIndex(c=>c.includes('apuesta'));
@@ -871,4 +875,3 @@ document.getElementById('csv-input').addEventListener('change', function(e) {
 </script>
 </body>
 </html>
-
