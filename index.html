@@ -293,16 +293,20 @@ const NUM_MES = {Enero:1,Febrero:2,Marzo:3,Abril:4,Mayo:5,Junio:6,Julio:7,Agosto
 
 function parseNum(v) {
   if (!v || v === '' || v === '0') return 0;
-  let s = String(v).replace(/\$/g,'').replace(/\s/g,'').trim();
-  // handle European format: 3.294.754,18 or 3294754,18
+  let s = String(v).replace(/\$/g,'').replace(/\s/g,'').replace(/"/g,'').trim();
+  // Formato europeo con punto de miles y coma decimal: 3.294.754,18
   if (s.includes(',') && s.includes('.')) { s = s.replace(/\./g,'').replace(',','.'); }
+  // Solo coma decimal (Google Sheets Argentina): 3294754,18
   else if (s.includes(',')) { s = s.replace(',','.'); }
-  else { s = s.replace(/\./g,''); }
+  // Solo punto decimal: 3294754.18
+  else { s = s.replace(/[^0-9.]/g,''); }
   return parseFloat(s) || 0;
 }
 function parsePct(v) {
-  if (!v) return null;
-  return parseFloat(String(v).replace('%','').replace(',','.'));
+  if (!v || v === '') return null;
+  let s = String(v).replace(/"/g,'').replace('%','').replace(',','.').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
 }
 function fmt(n) {
   if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
