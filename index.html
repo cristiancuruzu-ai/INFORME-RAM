@@ -126,7 +126,7 @@ tr:hover td{background:var(--bg3)}
   <div class="charts-grid">
     <div class="chart-card full"><div class="chart-title">Evolución RAM mensual</div><div class="chart-wrap tall"><canvas id="chart-ram"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">RAM anual por sucursal</div><div class="chart-wrap"><canvas id="chart-anual"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">% Promedio por año</div><div class="chart-wrap"><canvas id="chart-pct"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">% Retención promedio por año</div><div class="chart-wrap"><canvas id="chart-pct"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">EGMs por año</div><div class="chart-wrap"><canvas id="chart-egms"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">RAM promedio por mes del año</div><div class="chart-wrap"><canvas id="chart-mes"></canvas></div></div>
   </div>
@@ -140,7 +140,7 @@ tr:hover td{background:var(--bg3)}
           <th onclick="sortTable('numero_mes')">Mes <span id="sort-numero_mes">↕</span></th>
           <th onclick="sortTable('ram')">RAM $ <span id="sort-ram">↕</span></th>
           <th onclick="sortTable('apuestas')">Apuestas $ <span id="sort-apuestas">↕</span></th>
-          <th onclick="sortTable('porcentaje')">%Prom. <span id="sort-porcentaje">↕</span></th>
+          <th onclick="sortTable('porcentaje')">% Ret. <span id="sort-porcentaje">↕</span></th>
           <th onclick="sortTable('egms')">EGMs <span id="sort-egms">↕</span></th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="7" class="loading">Cargando datos...</td></tr></tbody>
@@ -345,7 +345,7 @@ function update(){
       data:anios.map(y=>wd.filter(d=>d.sucursal===s&&d.anio===y).reduce((a,d)=>a+d.ram,0)||null)
     })),anios);
 
-  // Chart % PROMEDIO
+  // Chart % retención
   const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
   if(charts.pct)charts.pct.destroy();
   charts.pct=makeChart('bar',document.getElementById('chart-pct'),
@@ -427,15 +427,33 @@ document.getElementById('btn-update').addEventListener('click',()=>{
 // ── DÓLAR BLUE HISTÓRICO ────────────────────────────────
 // Último día hábil de cada mes — fuente: bluelytics / dolarito.ar
 const BLUE_HISTORICO = {
-  '2018-01':9.35,'2018-02':9.95,'2018-03':10.20,'2018-04':11.50,'2018-05':13.50,
-  '2018-06':28.00,'2018-07':27.50,'2018-08':38.00,'2018-09':40.00,'2018-10':36.50,
-  '2018-11':37.00,'2018-12':38.50,
-  '2019-01':38.50,'2019-02':41.00,'2019-03':43.00,'2019-04':45.00,'2019-05':46.50,
-  '2019-06':47.00,'2019-07':48.00,'2019-08':60.00,'2019-09':63.00,'2019-10':73.00,
-  '2019-11':71.00,'2019-12':80.00,
-  '2020-01':82.00,'2020-02':85.00,'2020-03':88.00,'2020-04':114.00,'2020-05':119.00,
-  '2020-06':125.00,'2020-07':134.00,'2020-08':139.00,'2020-09':150.00,'2020-10':195.00,
-  '2020-11':165.00,'2020-12':167.00,
+  // Fuente: estudiodelamo.com / Ámbito Financiero — blue compra al cierre de cada mes
+  '2018-01':19.55,'2018-02':19.95,'2018-03':20.36,'2018-04':20.60,'2018-05':25.17,
+  '2018-06':28.40,'2018-07':27.45,'2018-08':36.00,'2018-09':39.30,'2018-10':34.50,
+  '2018-11':36.00,'2018-12':38.50,
+  '2019-01':35.50,'2019-02':38.80,'2019-03':42.65,'2019-04':45.00,'2019-05':44.50,
+  '2019-06':42.30,'2019-07':43.70,'2019-08':60.00,'2019-09':58.25,'2019-10':66.00,
+  '2019-11':66.25,'2019-12':73.50,
+  '2020-01':74.00,'2020-02':74.50,'2020-03':78.50,'2020-04':108.00,'2020-05':115.00,
+  '2020-06':116.00,'2020-07':131.00,'2020-08':131.00,'2020-09':140.00,'2020-10':163.00,
+  '2020-11':149.00,'2020-12':160.00,
+  '2021-01':148.00,'2021-02':141.00,'2021-03':136.00,'2021-04':145.00,'2021-05':152.00,
+  '2021-06':163.00,'2021-07':175.50,'2021-08':176.50,'2021-09':182.00,'2021-10':193.50,
+  '2021-11':197.50,'2021-12':204.00,
+  '2022-01':209.00,'2022-02':207.00,'2022-03':196.00,'2022-04':196.50,'2022-05':201.00,
+  '2022-06':234.00,'2022-07':286.00,'2022-08':285.00,'2022-09':284.00,'2022-10':286.00,
+  '2022-11':310.00,'2022-12':342.00,
+  '2023-01':379.00,'2023-02':373.00,'2023-03':388.00,'2023-04':462.00,'2023-05':485.00,
+  '2023-06':489.00,'2023-07':545.00,'2023-08':725.00,'2023-09':790.00,'2023-10':870.00,
+  '2023-11':855.00,'2023-12':975.00,
+  '2024-01':1145.00,'2024-02':1000.00,'2024-03':980.00,'2024-04':1010.00,'2024-05':1195.00,
+  '2024-06':1335.00,'2024-07':1340.00,'2024-08':1275.00,'2024-09':1205.00,'2024-10':1150.00,
+  '2024-11':1090.00,'2024-12':1195.00,
+  '2025-01':1200.00,'2025-02':1210.00,'2025-03':1280.00,'2025-04':1180.00,'2025-05':1160.00,
+  '2025-06':1190.00,'2025-07':1300.00,'2025-08':1300.00,'2025-09':1425.00,'2025-10':1425.00,
+  '2025-11':1415.00,'2025-12':1510.00,
+  '2026-01':1450.00,'2026-02':1405.00,'2026-03':1390.00,'2026-04':1395.00,'2026-05':1410.00,
+  '2026-06':1495.00,'2026-07':1540.00,'2026-08':1535.00,'2026-09':1535.00,
   '2021-01':161.00,'2021-02':150.00,'2021-03':143.00,'2021-04':146.00,'2021-05':167.00,
   '2021-06':175.00,'2021-07':178.00,'2021-08':185.00,'2021-09':183.00,'2021-10':198.00,
   '2021-11':205.00,'2021-12':208.00,
