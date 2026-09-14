@@ -64,8 +64,8 @@ tr:hover td{background:var(--bg3)}
 <body>
 <header>
   <div>
-    <div class="logo">Casino <span>Analytics</span></div>
-    <div class="header-sub">Corrientes · <span id="total-meses">Cargando...</span></div>
+    <div class="logo">Casino <span>MHE</span></div>
+    <div class="header-sub">RAM HISTORICO · <span id="total-meses">Cargando...</span></div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <span id="csv-status">✓ Datos actualizados</span>
@@ -126,7 +126,7 @@ tr:hover td{background:var(--bg3)}
   <div class="charts-grid">
     <div class="chart-card full"><div class="chart-title">Evolución RAM mensual</div><div class="chart-wrap tall"><canvas id="chart-ram"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">RAM anual por sucursal</div><div class="chart-wrap"><canvas id="chart-anual"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">% Retención promedio por año</div><div class="chart-wrap"><canvas id="chart-pct"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">% Promedio por año</div><div class="chart-wrap"><canvas id="chart-pct"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">EGMs por año</div><div class="chart-wrap"><canvas id="chart-egms"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">RAM promedio por mes del año</div><div class="chart-wrap"><canvas id="chart-mes"></canvas></div></div>
   </div>
@@ -140,7 +140,7 @@ tr:hover td{background:var(--bg3)}
           <th onclick="sortTable('numero_mes')">Mes <span id="sort-numero_mes">↕</span></th>
           <th onclick="sortTable('ram')">RAM $ <span id="sort-ram">↕</span></th>
           <th onclick="sortTable('apuestas')">Apuestas $ <span id="sort-apuestas">↕</span></th>
-          <th onclick="sortTable('porcentaje')">% Ret. <span id="sort-porcentaje">↕</span></th>
+          <th onclick="sortTable('porcentaje')">%Prom. <span id="sort-porcentaje">↕</span></th>
           <th onclick="sortTable('egms')">EGMs <span id="sort-egms">↕</span></th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="7" class="loading">Cargando datos...</td></tr></tbody>
@@ -345,7 +345,7 @@ function update(){
       data:anios.map(y=>wd.filter(d=>d.sucursal===s&&d.anio===y).reduce((a,d)=>a+d.ram,0)||null)
     })),anios);
 
-  // Chart % retención
+  // Chart % PROMEDIO
   const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:null;
   if(charts.pct)charts.pct.destroy();
   charts.pct=makeChart('bar',document.getElementById('chart-pct'),
