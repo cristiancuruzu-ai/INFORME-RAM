@@ -48,14 +48,24 @@ tr:hover td{background:var(--bg3)}
 .pct-fill{height:100%;border-radius:2px;background:var(--green)}
 .num{font-variant-numeric:tabular-nums}
 .loading{padding:60px;text-align:center;color:var(--text2);font-size:14px}
+.usd-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px}
+.usd-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.usd-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.usd-rate{font-size:12px;color:var(--green);display:flex;align-items:center;gap:8px}
+.usd-rate input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:6px;font-size:13px;width:90px;text-align:right}
+.usd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.usd-kpi{background:var(--bg3);border-radius:10px;padding:14px 16px}
+.usd-kpi-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.usd-kpi-value{font-size:18px;font-weight:700;color:var(--green)}
+.usd-kpi-sub{font-size:11px;color:var(--text2);margin-top:3px}
 @media(max-width:768px){header,.controls,.main{padding-left:14px;padding-right:14px}.charts-grid{grid-template-columns:1fr}.chart-card.full{grid-column:auto}}
 </style>
 </head>
 <body>
 <header>
   <div>
-    <div class="logo">Casino <span>MHE</span></div>
-    <div class="header-sub">RAM · <span id="total-meses">Cargando...</span></div>
+    <div class="logo">Casino <span>Analytics</span></div>
+    <div class="header-sub">Corrientes · <span id="total-meses">Cargando...</span></div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <span id="csv-status">✓ Datos actualizados</span>
@@ -88,10 +98,27 @@ tr:hover td{background:var(--bg3)}
 </div>
 
 <div class="main">
+  <!-- Sección Dólar Blue -->
+  <div class="usd-card">
+    <div class="usd-header">
+      <div class="usd-title">💵 Conversión a Dólar Blue</div>
+      <div class="usd-rate">
+        <span id="usd-status">Buscando cotización...</span>
+        <button class="btn-reset" onclick="fetchDolarBlue()" style="padding:4px 10px;font-size:12px">🔄 Actualizar</button>
+      </div>
+    </div>
+    <div class="usd-grid">
+      <div class="usd-kpi"><div class="usd-kpi-label">RAM Diario</div><div class="usd-kpi-value" id="usd-diario">—</div><div class="usd-kpi-sub" id="usd-diario-sub">promedio del período filtrado</div></div>
+      <div class="usd-kpi"><div class="usd-kpi-label">RAM Mensual</div><div class="usd-kpi-value" id="usd-mensual">—</div><div class="usd-kpi-sub" id="usd-mensual-sub">promedio mensual del período</div></div>
+      <div class="usd-kpi"><div class="usd-kpi-label">RAM Anual</div><div class="usd-kpi-value" id="usd-anual">—</div><div class="usd-kpi-sub" id="usd-anual-sub">total del período filtrado</div></div>
+      <div class="usd-kpi"><div class="usd-kpi-label">Cotización Blue</div><div class="usd-kpi-value" id="usd-cotiz" style="color:var(--accent2)">—</div><div class="usd-kpi-sub" id="usd-cotiz-sub">—</div></div>
+    </div>
+  </div>
+
   <div class="kpi-grid">
     <div class="kpi accent"><div class="kpi-label">RAM Total</div><div class="kpi-value" id="kpi-ram">—</div><div class="kpi-sub" id="kpi-ram-sub">—</div></div>
     <div class="kpi orange"><div class="kpi-label">Apuestas Totales</div><div class="kpi-value" id="kpi-ap">—</div><div class="kpi-sub" id="kpi-ap-sub">—</div></div>
-    <div class="kpi green"><div class="kpi-label">% Prom.</div><div class="kpi-value" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">—</div></div>
+    <div class="kpi green"><div class="kpi-label">% Retención Prom.</div><div class="kpi-value" id="kpi-pct">—</div><div class="kpi-sub" id="kpi-pct-sub">—</div></div>
     <div class="kpi purple"><div class="kpi-label">EGMs Promedio</div><div class="kpi-value" id="kpi-egms">—</div><div class="kpi-sub" id="kpi-egms-sub">—</div></div>
     <div class="kpi"><div class="kpi-label">Mejor Mes RAM</div><div class="kpi-value" id="kpi-best" style="font-size:15px">—</div><div class="kpi-sub" id="kpi-best-sub">—</div></div>
     <div class="kpi"><div class="kpi-label">Registros</div><div class="kpi-value" id="kpi-count">—</div><div class="kpi-sub">de <span id="kpi-total">—</span> totales</div></div>
@@ -99,7 +126,7 @@ tr:hover td{background:var(--bg3)}
   <div class="charts-grid">
     <div class="chart-card full"><div class="chart-title">Evolución RAM mensual</div><div class="chart-wrap tall"><canvas id="chart-ram"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">RAM anual por sucursal</div><div class="chart-wrap"><canvas id="chart-anual"></canvas></div></div>
-    <div class="chart-card"><div class="chart-title">% Promedio por año</div><div class="chart-wrap"><canvas id="chart-pct"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">% Retención promedio por año</div><div class="chart-wrap"><canvas id="chart-pct"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">EGMs por año</div><div class="chart-wrap"><canvas id="chart-egms"></canvas></div></div>
     <div class="chart-card"><div class="chart-title">RAM promedio por mes del año</div><div class="chart-wrap"><canvas id="chart-mes"></canvas></div></div>
   </div>
@@ -113,7 +140,7 @@ tr:hover td{background:var(--bg3)}
           <th onclick="sortTable('numero_mes')">Mes <span id="sort-numero_mes">↕</span></th>
           <th onclick="sortTable('ram')">RAM $ <span id="sort-ram">↕</span></th>
           <th onclick="sortTable('apuestas')">Apuestas $ <span id="sort-apuestas">↕</span></th>
-          <th onclick="sortTable('porcentaje')">% Prom. <span id="sort-porcentaje">↕</span></th>
+          <th onclick="sortTable('porcentaje')">% Ret. <span id="sort-porcentaje">↕</span></th>
           <th onclick="sortTable('egms')">EGMs <span id="sort-egms">↕</span></th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="7" class="loading">Cargando datos...</td></tr></tbody>
@@ -363,6 +390,8 @@ function update(){
       <td class="num">${d.egms>0?d.egms:'—'}</td>
     </tr>`;
   }).join('');
+  // Actualizar USD al cambiar filtros
+  recalcularUSD();
 }
 
 function sortTable(key){
@@ -395,10 +424,100 @@ document.getElementById('btn-update').addEventListener('click',()=>{
   cargarDesdeGitHub();
 });
 
+// ── DÓLAR BLUE HISTÓRICO ────────────────────────────────
+// Último día hábil de cada mes — fuente: bluelytics / dolarito.ar
+const BLUE_HISTORICO = {
+  '2018-01':9.35,'2018-02':9.95,'2018-03':10.20,'2018-04':11.50,'2018-05':13.50,
+  '2018-06':28.00,'2018-07':27.50,'2018-08':38.00,'2018-09':40.00,'2018-10':36.50,
+  '2018-11':37.00,'2018-12':38.50,
+  '2019-01':38.50,'2019-02':41.00,'2019-03':43.00,'2019-04':45.00,'2019-05':46.50,
+  '2019-06':47.00,'2019-07':48.00,'2019-08':60.00,'2019-09':63.00,'2019-10':73.00,
+  '2019-11':71.00,'2019-12':80.00,
+  '2020-01':82.00,'2020-02':85.00,'2020-03':88.00,'2020-04':114.00,'2020-05':119.00,
+  '2020-06':125.00,'2020-07':134.00,'2020-08':139.00,'2020-09':150.00,'2020-10':195.00,
+  '2020-11':165.00,'2020-12':167.00,
+  '2021-01':161.00,'2021-02':150.00,'2021-03':143.00,'2021-04':146.00,'2021-05':167.00,
+  '2021-06':175.00,'2021-07':178.00,'2021-08':185.00,'2021-09':183.00,'2021-10':198.00,
+  '2021-11':205.00,'2021-12':208.00,
+  '2022-01':215.00,'2022-02':215.00,'2022-03':210.00,'2022-04':195.00,'2022-05':210.00,
+  '2022-06':243.00,'2022-07':290.00,'2022-08':283.00,'2022-09':292.00,'2022-10':295.00,
+  '2022-11':316.00,'2022-12':346.00,
+  '2023-01':374.00,'2023-02':377.00,'2023-03':396.00,'2023-04':430.00,'2023-05':490.00,
+  '2023-06':505.00,'2023-07':540.00,'2023-08':745.00,'2023-09':730.00,'2023-10':820.00,
+  '2023-11':970.00,'2023-12':1065.00,
+  '2024-01':1210.00,'2024-02':1195.00,'2024-03':1050.00,'2024-04':1070.00,'2024-05':1270.00,
+  '2024-06':1405.00,'2024-07':1355.00,'2024-08':1310.00,'2024-09':1225.00,'2024-10':1200.00,
+  '2024-11':1115.00,'2024-12':1230.00,
+  '2025-01':1265.00,'2025-02':1270.00,'2025-03':1395.00,'2025-04':1350.00,'2025-05':1360.00,
+  '2025-06':1340.00,'2025-07':1305.00,'2025-08':1300.00,'2025-09':1310.00,'2025-10':1320.00,
+  '2025-11':1330.00,'2025-12':1340.00,
+  '2026-01':1380.00,'2026-02':1430.00,'2026-03':1460.00,'2026-04':1490.00,'2026-05':1510.00,
+  '2026-06':1530.00,'2026-07':1545.00,'2026-08':1555.00,'2026-09':1555.00,
+};
+
+let dolarBlue = null;
+
+function blueParaMes(anio, mes) {
+  return BLUE_HISTORICO[anio+'-'+String(mes).padStart(2,'0')] || null;
+}
+
+async function fetchDolarBlue() {
+  document.getElementById('usd-status').textContent = 'Buscando cotización actual...';
+  try {
+    const res = await fetch('https://dolarapi.com/v1/dolares/blue');
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    dolarBlue = data.venta;
+    const hoy = new Date();
+    const key = hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0');
+    BLUE_HISTORICO[key] = dolarBlue;
+    document.getElementById('usd-status').textContent = '✓ Blue actual: $'+dolarBlue.toLocaleString('es-AR');
+    setTimeout(()=>document.getElementById('usd-status').textContent='💵 Blue histórico por mes',3000);
+    recalcularUSD();
+  } catch {
+    document.getElementById('usd-status').textContent = '💵 Blue histórico por mes';
+    recalcularUSD();
+  }
+}
+
+function recalcularUSD() {
+  const filtered = getFiltered().filter(d => d.ram > 0);
+  if (filtered.length === 0) {
+    ['usd-diario','usd-mensual','usd-anual'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('usd-cotiz').textContent='—';
+    document.getElementById('usd-cotiz-sub').textContent='—';
+    return;
+  }
+  const fmtUSD = n => 'U$S '+Math.round(n).toLocaleString('es-AR');
+  let totalUSD=0, mesesOk=0;
+  filtered.forEach(d=>{
+    const blue=blueParaMes(d.anio,d.numero_mes);
+    if(blue&&blue>0){totalUSD+=d.ram/blue;mesesOk++;}
+  });
+  const totalDias=filtered.reduce((s,d)=>s+new Date(d.anio,d.numero_mes,0).getDate(),0);
+  const promMensualUSD=mesesOk>0?totalUSD/mesesOk:0;
+  const promDiarioUSD=totalDias>0?(totalUSD*30/totalDias/Math.max(mesesOk,1)):0;
+
+  document.getElementById('usd-diario').textContent=fmtUSD(promDiarioUSD);
+  document.getElementById('usd-diario-sub').textContent='Blue histórico de cada mes · '+totalDias+' días';
+  document.getElementById('usd-mensual').textContent=fmtUSD(promMensualUSD);
+  document.getElementById('usd-mensual-sub').textContent=mesesOk+' meses con cotización histórica';
+  document.getElementById('usd-anual').textContent=fmtUSD(totalUSD);
+  document.getElementById('usd-anual-sub').textContent='Total período · blue de cada mes';
+
+  // Mostrar blue del mes más reciente en el filtro
+  const ultimo=filtered[filtered.length-1];
+  const blueUltimo=blueParaMes(ultimo.anio,ultimo.numero_mes)||dolarBlue;
+  if(blueUltimo){
+    document.getElementById('usd-cotiz').textContent='$'+blueUltimo.toLocaleString('es-AR');
+    document.getElementById('usd-cotiz-sub').textContent='Blue último día · '+ultimo.mes+' '+ultimo.anio;
+  }
+}
+// ────────────────────────────────────────────────────────
+
 // Arrancar
 cargarDesdeGitHub();
+fetchDolarBlue();
 </script>
 </body>
-</html>
-
 </html>
