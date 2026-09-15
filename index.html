@@ -74,6 +74,13 @@ tr:hover td{background:var(--bg3)}
 </header>
 
 <div class="controls">
+  <label>Sociedad
+    <select id="fil-sociedad">
+      <option value="">Todas</option>
+      <option value="BRAS TEC SA">BRAS TEC SA</option>
+      <option value="QGAME SA">QGAME SA</option>
+    </select>
+  </label>
   <label>Sucursal<select id="fil-sucursal"><option value="">Todas</option></select></label>
   <label>Año desde<select id="fil-anio-desde"></select></label>
   <label>Año hasta<select id="fil-anio-hasta"></select></label>
@@ -135,12 +142,13 @@ tr:hover td{background:var(--bg3)}
     <div class="table-wrap">
       <table>
         <thead><tr>
+          <th onclick="sortTable('sociedad')">Sociedad <span id="sort-sociedad">↕</span></th>
           <th onclick="sortTable('sucursal')">Sucursal <span id="sort-sucursal">↕</span></th>
           <th onclick="sortTable('anio')">Año <span id="sort-anio">↕</span></th>
           <th onclick="sortTable('numero_mes')">Mes <span id="sort-numero_mes">↕</span></th>
           <th onclick="sortTable('ram')">RAM $ <span id="sort-ram">↕</span></th>
           <th onclick="sortTable('apuestas')">Apuestas $ <span id="sort-apuestas">↕</span></th>
-          <th onclick="sortTable('porcentaje')">% Ret. <span id="sort-porcentaje">↕</span></th>
+          <th onclick="sortTable('porcentaje')">% Porc. <span id="sort-porcentaje">↕</span></th>
           <th onclick="sortTable('egms')">EGMs <span id="sort-egms">↕</span></th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="7" class="loading">Cargando datos...</td></tr></tbody>
@@ -228,6 +236,20 @@ function parsearCSV(text){
   return result;
 }
 
+const SOCIEDADES = {
+  'CURUZU CUATIA': 'BRAS TEC SA',
+  'ANEXO CCUATIA': 'BRAS TEC SA',
+  'MERCEDES':      'BRAS TEC SA',
+  'MONTE CASEROS': 'QGAME SA',
+  'MOCORETA':      'QGAME SA',
+};
+
+function sociedadDe(sucursal) {
+  // Busca coincidencia parcial para mayor flexibilidad
+  const key = Object.keys(SOCIEDADES).find(k => sucursal.toUpperCase().includes(k));
+  return key ? SOCIEDADES[key] : 'SIN SOCIEDAD';
+}
+
 async function cargarDesdeGitHub(){
   try{
     const res=await fetch(CSV_URL+'?t='+Date.now());
@@ -244,13 +266,14 @@ async function cargarDesdeGitHub(){
 }
 
 function actualizarUI(msg){
-  // Selectores dinámicos
-  const sucursales=[...new Set(DATA.map(d=>d.sucursal))].sort();
+  const soc=document.getElementById('fil-sociedad').value;
+  const todasSuc=[...new Set(DATA.map(d=>d.sucursal))].sort();
+  const sucFiltradas=soc?todasSuc.filter(s=>sociedadDe(s)===soc):todasSuc;
   const selSuc=document.getElementById('fil-sucursal');
   const valSuc=selSuc.value;
   selSuc.innerHTML='<option value="">Todas</option>';
-  sucursales.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;selSuc.appendChild(o);});
-  if(valSuc)selSuc.value=valSuc;
+  sucFiltradas.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;selSuc.appendChild(o);});
+  selSuc.value=(valSuc&&sucFiltradas.includes(valSuc))?valSuc:'';
 
   const anios=[...new Set(DATA.map(d=>d.anio))].sort();
   ['fil-anio-desde','fil-anio-hasta'].forEach((id,i)=>{
@@ -272,6 +295,7 @@ function actualizarUI(msg){
 }
 
 function getFiltered(){
+  const soc=document.getElementById('fil-sociedad').value;
   const suc=document.getElementById('fil-sucursal').value;
   const aD=+document.getElementById('fil-anio-desde').value;
   const aH=+document.getElementById('fil-anio-hasta').value;
@@ -279,6 +303,7 @@ function getFiltered(){
   const mH=+document.getElementById('fil-mes-hasta').value;
   const ceros=document.getElementById('fil-ceros').value;
   return DATA.filter(d=>{
+    if(soc&&sociedadDe(d.sucursal)!==soc)return false;
     if(suc&&d.sucursal!==suc)return false;
     if(d.anio<aD||d.anio>aH)return false;
     if(d.numero_mes<mD||d.numero_mes>mH)return false;
@@ -372,16 +397,20 @@ function update(){
 
   // Tabla
   const sorted=[...filtered].sort((a,b)=>{
-    const va=a[sortKey],vb=b[sortKey];
+    const va=a[sortKey]||(sortKey==='sociedad'?sociedadDe(a.sucursal):'');
+    const vb=b[sortKey]||(sortKey==='sociedad'?sociedadDe(b.sucursal):'');
     return typeof va==='string'?sortDir*va.localeCompare(vb):sortDir*(va-vb);
   });
   document.getElementById('tbl-count').textContent=sorted.length+' registros';
-  document.getElementById('tbody').innerHTML=sorted.map((d,i)=>{
+  document.getElementById('tbody').innerHTML=sorted.map((d)=>{
     const ci=sucursales.indexOf(d.sucursal)%COLORS.length;
     const color=COLORS[ci];
     const isCero=d.ram===0;
+    const soc=sociedadDe(d.sucursal);
+    const socColor=soc==='BRAS TEC SA'?'var(--accent)':'var(--accent2)';
     const pctBar=d.porcentaje!=null?`<div class="pct-bar"><span class="num">${d.porcentaje.toFixed(2)}%</span><div class="pct-bg"><div class="pct-fill" style="width:${Math.min(100,(d.porcentaje-85)/15*100)}%"></div></div></div>`:'—';
     return `<tr>
+      <td><span class="badge" style="background:${socColor}22;color:${socColor}">${soc}</span></td>
       <td><span class="badge" style="background:${color}22;color:${color}">${d.sucursal.split(' ')[0]}</span>${d.sucursal}</td>
       <td class="num">${d.anio}</td><td>${d.mes}</td>
       <td class="num">${isCero?'—':fmtFull(d.ram)}</td>
@@ -403,6 +432,7 @@ function sortTable(key){
 }
 
 function resetFiltros(){
+  document.getElementById('fil-sociedad').value='';
   document.getElementById('fil-sucursal').value='';
   const anios=[...new Set(DATA.map(d=>d.anio))].sort();
   document.getElementById('fil-anio-desde').value=anios[0];
@@ -413,8 +443,11 @@ function resetFiltros(){
   update();
 }
 
-['fil-sucursal','fil-anio-desde','fil-anio-hasta','fil-mes-desde','fil-mes-hasta','fil-ceros'].forEach(id=>{
-  document.getElementById(id).addEventListener('change',update);
+['fil-sociedad','fil-sucursal','fil-anio-desde','fil-anio-hasta','fil-mes-desde','fil-mes-hasta','fil-ceros'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>{
+    if(id==='fil-sociedad') actualizarUI();
+    else update();
+  });
 });
 
 // Botón actualizar — recarga desde GitHub
