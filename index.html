@@ -64,8 +64,8 @@ tr:hover td{background:var(--bg3)}
 <body>
 <header>
   <div>
-    <div class="logo">Casino <span>MHE</span></div>
-    <div class="header-sub">RAM HISTORICO · <span id="total-meses">Cargando...</span></div>
+    <div class="logo">Casino <span>Analytics</span></div>
+    <div class="header-sub">Corrientes · <span id="total-meses">Cargando...</span></div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <span id="csv-status">✓ Datos actualizados</span>
@@ -147,8 +147,10 @@ tr:hover td{background:var(--bg3)}
           <th onclick="sortTable('anio')">Año <span id="sort-anio">↕</span></th>
           <th onclick="sortTable('numero_mes')">Mes <span id="sort-numero_mes">↕</span></th>
           <th onclick="sortTable('ram')">RAM $ <span id="sort-ram">↕</span></th>
+          <th>Blue $</th>
+          <th onclick="sortTable('ram')">RAM U$S <span id="sort-ramusd">↕</span></th>
           <th onclick="sortTable('apuestas')">Apuestas $ <span id="sort-apuestas">↕</span></th>
-          <th onclick="sortTable('porcentaje')">% Porc. <span id="sort-porcentaje">↕</span></th>
+          <th onclick="sortTable('porcentaje')">% Ret. <span id="sort-porcentaje">↕</span></th>
           <th onclick="sortTable('egms')">EGMs <span id="sort-egms">↕</span></th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="7" class="loading">Cargando datos...</td></tr></tbody>
@@ -414,6 +416,8 @@ function update(){
       <td><span class="badge" style="background:${color}22;color:${color}">${d.sucursal.split(' ')[0]}</span>${d.sucursal}</td>
       <td class="num">${d.anio}</td><td>${d.mes}</td>
       <td class="num">${isCero?'—':fmtFull(d.ram)}</td>
+      <td class="num" style="color:var(--accent2)">${blueParaMes(d.anio,d.numero_mes)?'$'+blueParaMes(d.anio,d.numero_mes).toLocaleString('es-AR'):'—'}</td>
+      <td class="num" style="color:var(--green)">${(()=>{const b=blueParaMes(d.anio,d.numero_mes);return(!isCero&&b)?'U$S '+Math.round(d.ram/b).toLocaleString('es-AR'):'—';})()}</td>
       <td class="num">${isCero?'—':fmtFull(d.apuestas)}</td>
       <td>${pctBar}</td>
       <td class="num">${d.egms>0?d.egms:'—'}</td>
